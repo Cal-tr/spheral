@@ -125,6 +125,16 @@ class defaultExpansionTriggerWrapper:
 def alwayFalseFunc(posi):
     return False
 
+class ConstantRho:
+    def __init__(self, rho0):
+        assert type(rho0) is float
+        self.rho0 = rho0
+        return
+    def rho(self, r):
+        return self.rho0
+    def __call__(self, r):
+        return self.rho(r)
+
 ##################################################################################################
 #
 #
@@ -133,11 +143,11 @@ def alwayFalseFunc(posi):
 ##################################################################################################
 class ExpandingDomain:
         def __init__(self,
-                 integrator=None,          # spheral controller obj
-                 constBCPlane=None,        # plane for internal constant boundary
-                 redistributer=None,       # we'll need to shuffle things around a bit
-                 rho_func = None,          # function for quiessant density
-                 removeViolaters=True,     # remove internal nodes that move past the expansion front
+                 integrator=None,           # spheral controller obj
+                 constBCPlane=None,         # plane for internal constant boundary
+                 redistributer=None,        # we'll need to shuffle things around a bit
+                 rho_func = None,           # function for quiessant density
+                 removeViolaters=True,      # remove internal nodes that move past the expansion front
                  initialRadius=None,        # radius or vector of major axis lengths
                  initialCenter=None,        # center of sphere/ellipse 
                  ellipseAxisA=None,         # fixed axis
@@ -159,16 +169,16 @@ class ExpandingDomain:
             self.last_cycle = 0
             self.nDeleted = 0
             
-            # things
-            self.isSolidSim=False
-            self.areAdditionalFields=False
+            # bool control switches
+            self.expansionCompleted=False
+            self.removeViolaters = removeViolaters
+
+            # other things we'll need
             self.redistributeTimer = SpheralTimer("Time for redistributing nodes.")
             self.integrator=integrator                      
             self.activeDatabase = integrator.dataBase
             self.maxKernelExtent = self.activeDatabase.maxKernelExtent
             self.dim = self.activeDatabase.nDim
-            self.removeViolaters = removeViolaters 
-            self.rho_func = rho_func
             self.plane = constBCPlane
             self.auxillaryFunctions=auxillaryFunctions
             self.tempBCstorage=[]
@@ -176,26 +186,31 @@ class ExpandingDomain:
             self.stepSize = stepSize
             self.testZoneThickness = testZoneThickness
             self.bcThickness = bcThickness
-            self.expansionCompleted=False
             self.permanentConstNodeFunc=permanentConstNodeFunc
+            self.rho_func = rho_func
 
             # some dimensional aliases we'll need
             if self.dim ==3:
-                self.ConstantBoundary = ConstantBoundaryWrapper3d
                 Ellipse = Ellipse3d
-                self.Vector = Vector3d
                 Plane = Plane3d
-                State = State3d
+                self.IntField = IntField3d
+                self.ConstantBoundary = ConstantBoundaryWrapper3d
+                self.Vector = Vector3d
+                self.State = State3d
+                self.StateDerivatives = StateDerivatives3d
                 if redistributer:
                     self.redistributer = redistributer
                 elif mpi.procs>1:
                     self.redistributer = PeanoHilbertOrderRedistributeNodes3d(self.activeDatabase.maxKernelExtent,workBalance=False)
+
             elif self.dim ==2:
-                self.ConstantBoundary = ConstantBoundaryWrapper2d
                 Ellipse = Ellipse2d
-                self.Vector = Vector2d
                 Plane = Plane2d
-                State = State2d
+                self.IntField = IntField2d
+                self.ConstantBoundary = ConstantBoundaryWrapper2d
+                self.Vector = Vector2d
+                self.State = State2d
+                self.StateDerivatives = StateDerivatives2d
                 if redistributer:
                     self.redistributer = redistributer
                 elif mpi.procs>1:
@@ -211,7 +226,8 @@ class ExpandingDomain:
             
             # set up fields we're tracking
             #----------------------------------------------------------------
-            theState = State(self.activeDatabase,integrator.physicsPackages())
+            theState = self.State(self.activeDatabase,integrator.physicsPackages())
+            theDeriv = self.StateDerivatives(self.activeDatabase,integrator.physicsPackages())
 
             allFields = list(theState.allIntFields())
             allFields.extend(list(theState.allScalarFields()))
@@ -219,24 +235,22 @@ class ExpandingDomain:
             allFields.extend(list(theState.allSymTensorFields()))
             allFields.extend(list(theState.allTensorFields()))
 
-            # some packages that have fields which definitely need to be
-            # tracked if they're in use
+            allFields.extend(list(theDeriv.allIntFields()))
+            allFields.extend(list(theDeriv.allScalarFields()))
+            allFields.extend(list(theDeriv.allVectorFields()))
+            allFields.extend(list(theDeriv.allSymTensorFields()))
+            allFields.extend(list(theDeriv.allTensorFields()))
+
+            # same important fields we know the state/derivs
+            # don't track and we need to check for.
             for package in integrator.physicsPackages():
-                
                 if ('Damage' in package.label()):
                     if hasattr(package, 'flaws'):
                         allFields.append(package.flaws)
-                if ('StrainPorosity' in package.label()):
-                    if hasattr(package, 'c0'):
-                        allFields.append(package.c0)
-                    if hasattr(package, 'alpha0'):
-                        allFields.append(package.alpha0)
-                    if hasattr(package, 'alpha'):
-                        allFields.append(package.alpha)
                 if ('ConstantAcceleration' in package.label()):
                     if hasattr(package, 'flags'):
                         allFields.append(package.flags)
-   
+            
             # user defined additional fields
             if additionalFields:
                 for candidateField in additionalFields:
@@ -255,13 +269,11 @@ class ExpandingDomain:
                 for j in range(len(allFields)):
                     fieldj = allFields[j]
                     nodeListj = fieldj.nodeList()
-
                     if nodeListi == nodeListj:
                         if fieldj.name == 'position':
                             self.activeFields[i].insert(0,fieldj)
                         else:
                             self.activeFields[i].append(fieldj)
-
 
             # how are we doin this expansion?
             #------------------------------------------------------------------
@@ -300,22 +312,22 @@ class ExpandingDomain:
                                            center=initialCenter,
                                            abc=initialRadius-self.Vector.one*testZoneThickness)
 
-            # stow things and set up the const bc
+            # initialize a bunch of things then deinitialize to play nice with
+            # the controller
             #------------------------------------------------------------------
-            packages = integrator.physicsPackages()
-            for package in packages:
-                package.initializeProblemStartup(self.activeDatabase)
-
+            self.initializeActiveRegionMask()
+            self.initializeDerivatives(0,0.0,0.0)
             self.initializeInactiveNodeLists()
             self.redistribute()
             self.setConstantBoundary(0,0.0,0.0)
-            
+            self.deinitialize()
+
 
         def expand(self, cycle, t, dt):
         #---------------------------------------------------------------
         # method used as a periodic work function to make it all happen
         #---------------------------------------------------------------
-      
+
             if self.expansionRequired()==1 and not self.expansionCompleted:
                 NstoreLocal = 0
                 for i in range(len(self.inactiveFields)):
@@ -325,7 +337,7 @@ class ExpandingDomain:
                 if Nstore == 0:
                     self.expansionCompleted = True
                 
-                #update the ellipses (we'll need to create IO for these)
+                #update the ellipses 
                 self.activeZoneEllipse.abc+=self.Vector.one*self.stepSize
                 self.constBCEllipse.abc+=self.Vector.one*self.stepSize
                 self.testZoneEllipse.abc+=self.Vector.one*self.stepSize
@@ -338,7 +350,6 @@ class ExpandingDomain:
 
                 self.redistribute()
                 self.resetBoundaries(cycle,t,dt)
-                self.reinitialize(cycle,t,dt) 
                 self.applyAuxillaryFunctions() 
                 
                 self.last_time = t
@@ -455,15 +466,16 @@ class ExpandingDomain:
         # dynamic const bc to be culled (less relevant with field based
         # movement)
         #---------------------------------------------------------------
-            activeNodeLists = self.activeDatabase.nodeLists()
-            for j in range(self.activeDatabase.numNodeLists):
-                pos = activeNodeLists[j].positions()
-                indices = [i for i in range(activeNodeLists[j].numInternalNodes) if (self.constBCEllipse.isOutside(pos[i]) or self.permanentConstNodeFunc(pos[i]))]
-                activeNodeLists[j].deleteNodes(vector_of_int(indices)) 
-                self.nDeleted+=len(indices) 
-                print('--------------------------------')
-                print('Total Nodes Deleted: ',self.nDeleted)
-                print('-------------------------------')
+            if self.removeViolaters:
+                activeNodeLists = self.activeDatabase.nodeLists()
+                for j in range(self.activeDatabase.numNodeLists):
+                    pos = activeNodeLists[j].positions()
+                    indices = [i for i in range(activeNodeLists[j].numInternalNodes) if (self.constBCEllipse.isOutside(pos[i]) or self.permanentConstNodeFunc(pos[i]))]
+                    activeNodeLists[j].deleteNodes(vector_of_int(indices)) 
+                    self.nDeleted+=len(indices) 
+                    print('--------------------------------')
+                    print('Total Nodes Deleted: ',self.nDeleted)
+                    print('-------------------------------')
 
         def setConstantBoundary(self,cycle,t,dt):
         #---------------------------------------------------------------
@@ -474,7 +486,7 @@ class ExpandingDomain:
             activeNodeLists = self.activeDatabase.nodeLists()
             for j in range(self.activeDatabase.numNodeLists):
                 pos = activeNodeLists[j].positions()
-                constNodes = [i for i in range(activeNodeLists[j].numInternalNodes) if (self.constBCEllipse.isOutside(pos[i]) or self.permanentConstNodeFunc(pos[i])) ]
+                constNodes = [i for i in range(activeNodeLists[j].numInternalNodes) if (self.constBCEllipse.isOutside(pos[i])  or self.permanentConstNodeFunc(pos[i])) and self.activeRegionMask[j][i]==0 ]
                 self.constBC.append(self.ConstantBoundary(self.activeDatabase, activeNodeLists[j], vector_of_int(constNodes), self.plane))
             
             packages = self.integrator.physicsPackages()
@@ -495,14 +507,33 @@ class ExpandingDomain:
                     p.appendBoundary(bc) 
                 del self.tempBCstorage[0]
 
-        def reinitialize(self,cycle,t,dt):
+        def deinitialize(self):
+        #---------------------------------------------------------------
+        # set things back to the way they were 
+        #---------------------------------------------------------------
+            packages = self.integrator.physicsPackages()
+            derivs = eval("StateDerivatives%sd(self.activeDatabase, packages)" % (self.dim)) # redefine in constructor
+            derivs.Zero()
+        
+            for nodeList in self.activeDatabase.nodeLists():
+                nodeList.numGhostNodes = 0 
+
+        def initializeDerivatives(self,cycle,t,dt):
         #---------------------------------------------------------------
         # have to set the state of the newly added nodes for the
         # constant bcs buffered values. This is mostly from the
         # controller
         #---------------------------------------------------------------
+            
+            # make sure we're fresh
+            self.deinitialize()
 
+            packages = self.integrator.physicsPackages()
             uniquebcs = self.integrator.uniqueBoundaryConditions()
+            state = self.State(self.activeDatabase, packages)
+            derivs = self.StateDerivatives(self.activeDatabase, packages)
+
+            # initialize our bcs
             for bc in uniquebcs:
                 bc.initializeProblemStartup(False)
     
@@ -511,53 +542,49 @@ class ExpandingDomain:
             self.integrator.setGhostNodes()
             self.activeDatabase.updateConnectivityMap(False)
 
-            # Initialize the integrator and packages.
-            #self.setConstantNodeDensity() # if the denisty off we'll correct it before calculating the pressure/sound speed
-            packages = self.integrator.physicsPackages()
-            #for package in packages:
-            #    if package is not type(StrainPorosity2d) or package is not type(StrainPorosity3d):
-            #        package.initializeProblemStartup(self.activeDatabase)
-            # this will avoid the density drop off at the edge of the domain
-            state = eval("State%sd(self.activeDatabase, packages)" % (self.dim)) # redefine in constructor
-            derivs = eval("StateDerivatives%sd(self.activeDatabase, packages)" % (self.dim)) # redefine in constructor
-            self.activeDatabase.reinitializeNeighbors()
-            self.integrator.setGhostNodes()
-            self.activeDatabase.updateConnectivityMap(False)
+            
+            #self.activeDatabase.reinitializeNeighbors()
+            #self.integrator.setGhostNodes()
+            #self.activeDatabase.updateConnectivityMap(False)
             self.integrator.applyGhostBoundaries(state, derivs)
-            for bc in uniquebcs:
-                bc.initializeProblemStartup(False)
+            #for bc in uniquebcs:
+            #    bc.initializeProblemStartup(False)
 
-            # got to get the state right for the constant boundary 
-            self.integrator.preStepInitialize(state, derivs) # density calculated
+            # get our derivatives
+            self.integrator.preStepInitialize(state, derivs) 
             dt = self.integrator.selectDt(self.integrator.dtMin, self.integrator.dtMax, state, derivs)
-            self.setConstantNodeDensity() # if we have a density function set it
             self.integrator.initializeDerivatives(t, dt, state, derivs)
             self.integrator.evaluateDerivatives(t, dt, self.activeDatabase, state, derivs)
+            self.integrator.finalizeDerivatives(t, dt, self.activeDatabase, state, derivs)
+            
+            # another crack at initialize in case it relies on storing t-1 derivatives
+            self.integrator.initializeDerivatives(t, dt, state, derivs) 
 
-            # If there are stateful boundaries present, give them one more crack at copying inital state
-            self.activeDatabase.reinitializeNeighbors()
-            self.integrator.setGhostNodes()
-            self.activeDatabase.updateConnectivityMap(False)
-            self.integrator.applyGhostBoundaries(state, derivs)
-            for bc in uniquebcs:
-                bc.initializeProblemStartup(True)
-            self.integrator.setGhostNodes()
-            
-        def setConstantNodeDensity(self):
+
+        def initializeActiveRegionMask(self):
         #---------------------------------------------------------------
-        # the preStepInitialize() step for SPHHydroBase will hit
-        # the density sum so we need to reset the const node density
-        # to prevent the drop off at the edge of the domain.
+        # create a fields to track if nodes were ever fully active
+        # this prevents them from being put back into the const-bc
         #---------------------------------------------------------------
-            if self.rho_func:
-                activeNodeLists = self.activeDatabase.nodeLists()
-                for j in range(self.activeDatabase.numNodeLists):
-                    rho_funcj = self.rho_func[j]
-                    pos = activeNodeLists[j].positions()
-                    rho = activeNodeLists[j].massDensity()
-            
-                    for i in self.constBC[j].nodeIndices:
-                        rho[i] = rho_funcj(pos[i])
+            self.activeRegionMask=[]
+            activeNodeLists = self.activeDatabase.nodeLists()
+            for i in range(len(activeNodeLists)):
+                nodes = activeNodeLists[i]
+                self.activeRegionMask.append(self.IntField("expanding boundary active region mask" + nodes.name, nodes, 0))
+            self.setActiveRegionMask()
+
+
+        def setActiveRegionMask(self):
+        #---------------------------------------------------------------
+        # if were not in the const bc and not inactive set the mask to 1
+        #---------------------------------------------------------------
+            activeNodeLists = self.activeDatabase.nodeLists()
+            for i in range(len(activeNodeLists)):
+                nodes = activeNodeLists[i]
+                pos   = nodes.positions()
+                for j in range(nodes.numInternalNodes):
+                    if self.activeZoneEllipse.isInside(pos[j]):
+                        self.activeRegionMask[i][j] = 1
 
         def applyAuxillaryFunctions(self):  
         #---------------------------------------------------------------
@@ -584,13 +611,15 @@ class ExpandingDomain:
                 for j in range(numFieldsi):
                     self.constBC[i].applyGhostBoundary(self.activeFields[i][j])
                 
-                mass = activeNodeLists[i].mass()
-                pos  = activeNodeLists[i].positions()
-                if GeometryRegistrar.coords() == CoordinateType.RZ:
-                    for k in self.constBC[i].nodeIndices:
-                        mass[k] *= 2.0*math.pi*pos[k].y
+                # isRZ is depericate would need different 
+                # implementation if RZ compatibility is desired
+                #mass = activeNodeLists[i].mass()
+                #pos  = activeNodeLists[i].positions()
+                #if self.activeDatabase.isRZ:
+                #    for k in self.constBC[i].nodeIndices:
+                #        mass[k] *= 2.0*math.pi*pos[k].y
 
-                self.setConstantNodeDensity()
+                #self.setConstantNodeDensity()
                 
 
                 # alloc room for new internal nodes
@@ -615,8 +644,6 @@ class ExpandingDomain:
             return "ExpandingDomain"
         #---------------------------------------------------------------------
         def dumpState(self, file, path):
-
-            #file.writeObject(self.inactiveFields,path+"/inactiveFields")
             file.writeObject(self.activeZoneEllipse.abc, path + "/activeZone_abc")
             file.writeObject(self.constBCEllipse.abc, path + "/constBC_abc")
             file.writeObject(self.testZoneEllipse.abc, path + "/testZone_abc")
@@ -628,7 +655,6 @@ class ExpandingDomain:
             return
         #---------------------------------------------------------------------
         def restoreState(self, file, path):
-            #self.inactiveFields = file.readObject(path+"/inactiveFields")
             self.activeZoneEllipse.abc = file.readObject(path+"/activeZone_abc")
             self.constBCEllipse.abc = file.readObject(path+"/constBC_abc")
             self.testZoneEllipse.abc = file.readObject(path+"/testZone_abc")
@@ -644,8 +670,8 @@ class ExpandingDomain:
             for f in self.auxillaryFunctions:
                 f()
             
-            # stored values will be consistent w/ time zero and 
-            # need to be clipped to the current inactive region
+            #stored values will be consistent w/ time zero and 
+            #need to be clipped to the current inactive region
             for i in range(self.activeDatabase.numNodeLists):
                 numInactiveNodesi = len(self.inactiveFields[i][0])
                 numFieldsi = len(self.activeFields[i])
@@ -656,5 +682,3 @@ class ExpandingDomain:
                         del self.inactiveFields[i][j][index]
                 
             return
-
-
