@@ -1,14 +1,13 @@
 //SidreDataCollectionInLine.hh
 #include "axom/sidre.hpp"
 #include "Field/Field.hh"
-#include <vector>
 
 namespace Spheral
 {
 
 template <typename Dimension, typename DataType,
          typename std::enable_if<std::is_arithmetic<DataType>::value,
-                                 DataType>::type*>
+                                 DataType>::type* = nullptr>
 inline
 axom::sidre::Group *SidreDataCollection::sidreStoreField(const std::string &view_name, 
                                                          const Spheral::Field<Dimension, DataType> &field)
@@ -136,7 +135,7 @@ axom::sidre::Group *SidreDataCollection::sidreStoreField(const std::string &view
 //------------------------------------------------------------------------------
 template <typename Dimension, typename DataType,
          typename std::enable_if<!is_rank_n_tensor<DataType>::value && !std::is_arithmetic<DataType>::value,
-                                 DataType>::type*>
+                                 DataType>::type* = nullptr>
 inline
 axom::sidre::Group *SidreDataCollection::sidreStoreField(const std::string &view_name, 
                                                          const Spheral::Field<Dimension, DataType> &field)
@@ -157,7 +156,7 @@ axom::sidre::Group *SidreDataCollection::sidreStoreField(const std::string &view
 
 template <typename Dimension, typename DataType,
          typename std::enable_if<is_rank_n_tensor<DataType>::value && !std::is_arithmetic<DataType>::value,
-                                 DataType>::type*>
+                                 DataType>::type* = nullptr>
 inline
 axom::sidre::Group *SidreDataCollection::sidreStoreField(const std::string &view_name, 
                                                          const Spheral::Field<Dimension, DataType> &field)
@@ -167,7 +166,7 @@ axom::sidre::Group *SidreDataCollection::sidreStoreField(const std::string &view
    axom::IndexType num_elements = DataTypeTraits<DataType>::numElements(field[0]);
    int view_count = 0;
 
-   std::vector<double> data(num_elements);
+   double data [num_elements];
    for (u_int i = 0; i < field.size(); ++i)
    {
       int index = 0;
@@ -177,7 +176,7 @@ axom::sidre::Group *SidreDataCollection::sidreStoreField(const std::string &view
          index++;
       }
       axom::sidre::Buffer* buff = m_datastore_ptr->createBuffer()->allocate(dtype, num_elements)
-                                                 ->copyBytesIntoBuffer(&data[0], sizeof(double) * num_elements);
+                                                 ->copyBytesIntoBuffer(data, sizeof(double) * num_elements);
       wholeField->createView(view_name + std::to_string(view_count), dtype, num_elements, buff);
       view_count++;
    }
@@ -195,7 +194,7 @@ axom::sidre::Group *SidreDataCollection::sidreStoreField(const std::string &view
    axom::IndexType num_elements = DataTypeTraits<Dim<2>::Vector>::numElements(field[0]);
    int view_count = 0;
 
-   std::vector<double> data(num_elements);
+   double data [num_elements];
    for (u_int i = 0; i < field.size(); ++i)
    {
       int index = 0;
@@ -205,7 +204,7 @@ axom::sidre::Group *SidreDataCollection::sidreStoreField(const std::string &view
          index++;
       }
       axom::sidre::Buffer* buff = m_datastore_ptr->createBuffer()->allocate(dtype, num_elements)
-                                                 ->copyBytesIntoBuffer(&data[0], sizeof(double) * num_elements);
+                                                 ->copyBytesIntoBuffer(data, sizeof(double) * num_elements);
       wholeField->createView(view_name + std::to_string(view_count), dtype, num_elements, buff);
       view_count++;
    }

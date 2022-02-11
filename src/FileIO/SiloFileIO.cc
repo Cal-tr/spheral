@@ -107,11 +107,14 @@ void readInt(DBfile* filePtr, int& value, const string pathName) {
 //------------------------------------------------------------------------------
 void writeString(DBfile* filePtr, const string& value, const string pathName) {
   const int size = value.size();
+  char cvalue[size];
+  std::copy(value.begin(), value.end(), cvalue);
+  //cvalue[size] = '\0';
   int dims[1] = {size};
   writeInt(filePtr, dims[0], pathName + "/size");
   if (dims[0] > 0) {
     const string varname = setdir(filePtr, pathName + "/value");
-    VERIFY2(DBWrite(filePtr, varname.c_str(), value.c_str(), dims, 1, DB_CHAR) == 0,
+    VERIFY2(DBWrite(filePtr, varname.c_str(), cvalue, dims, 1, DB_CHAR) == 0,
             "SiloFileIO ERROR: unable to write string variable " << pathName);
   }
 }
@@ -122,9 +125,9 @@ void readString(DBfile* filePtr, string& value, const string pathName) {
   if (valsize == 0) {
     value = "";
   } else {
-    std::vector<char> cvalue(valsize + 1);  // Do we need to allow space for trailing null?
+    char cvalue[valsize + 1];  // Do we need to allow space for trailing null?
     const string varname = setdir(filePtr, pathName + "/value");
-    VERIFY2(DBReadVar(filePtr, varname.c_str(), &cvalue[0]) == 0,
+    VERIFY2(DBReadVar(filePtr, varname.c_str(), cvalue) == 0,
             "SiloFileIO ERROR: failed to read string variable " << pathName);
     value = string(&cvalue[0], &cvalue[valsize]);
   }

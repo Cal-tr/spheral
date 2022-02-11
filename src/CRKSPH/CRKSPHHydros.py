@@ -62,7 +62,8 @@ class %(classname)s%(dim)s(SolidCRKSPHHydroBase%(dim)s):
                  HUpdate,
                  epsTensile,
                  nTensile,
-                 damageRelieveRubble):
+                 damageRelieveRubble,
+                 negativePressureInDamage):
         self._smoothingScaleMethod = %(smoothingScaleMethod)s%(dim)s()
         SolidCRKSPHHydroBase%(dim)s.__init__(self,
                                              self._smoothingScaleMethod,
@@ -79,7 +80,8 @@ class %(classname)s%(dim)s(SolidCRKSPHHydroBase%(dim)s):
                                              HUpdate,
                                              epsTensile,
                                              nTensile,
-                                             damageRelieveRubble)
+                                             damageRelieveRubble,
+                                             negativePressureInDamage)
         return
 """
 
@@ -148,6 +150,7 @@ class %(classname)s(SolidCRKSPHHydroBaseRZ):
                  epsTensile,
                  nTensile,
                  damageRelieveRubble,
+                 negativePressureInDamage,
                  etaMinAxis):
         if GeometryRegistrar.coords() != CoordinateType.RZ:
             raise RuntimeError("Import from SpheralRZ before trying to use RZ physics")
@@ -167,7 +170,8 @@ class %(classname)s(SolidCRKSPHHydroBaseRZ):
                                         HUpdate,
                                         epsTensile,
                                         nTensile,
-                                        damageRelieveRubble)
+                                        damageRelieveRubble,
+                                        negativePressureInDamage)
         self.zaxisBC = AxisBoundaryRZ(etaMinAxis)
         self.appendBoundary(self.zaxisBC)
         return
@@ -219,6 +223,7 @@ def CRKSPH(dataBase,
            epsTensile = 0.0,
            nTensile = 4.0,
            damageRelieveRubble = False,
+           negativePressureInDamage = False,
            ASPH = False,
            etaMinAxis = 0.1,
            crktype = "default"):
@@ -294,7 +299,8 @@ def CRKSPH(dataBase,
               "nTensile" : nTensile}
 
     if nsolid > 0:
-        kwargs.update({"damageRelieveRubble" : damageRelieveRubble})
+        kwargs.update({"damageRelieveRubble" : damageRelieveRubble,
+                       "negativePressureInDamage" : negativePressureInDamage})
 
     if GeometryRegistrar.coords() == CoordinateType.RZ:
         kwargs.update({"etaMinAxis" : etaMinAxis})
@@ -321,6 +327,7 @@ def ACRKSPH(dataBase,
             epsTensile = 0.0,
             nTensile = 4.0,
             damageRelieveRubble = False,
+            negativePressureInDamage = False,
             etaMinAxis = 0.1):
     return CRKSPH(dataBase = dataBase,
                   Q = Q,
@@ -336,5 +343,6 @@ def ACRKSPH(dataBase,
                   epsTensile = epsTensile,
                   nTensile = nTensile,
                   damageRelieveRubble = damageRelieveRubble,
+                  negativePressureInDamage = negativePressureInDamage,
                   ASPH = True,
                   etaMinAxis = etaMinAxis)

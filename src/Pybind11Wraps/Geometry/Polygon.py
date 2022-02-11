@@ -7,10 +7,9 @@ from PYB11Generator import *
 class Polygon:
 
     PYB11typedefs = """
-    using Polygon = GeomPolygon;
-    using Vector = GeomPolygon::Vector;
-    using Tensor = GeomPolygon::Tensor;
-    using Facet = GeomPolygon::Facet;
+    typedef GeomPolygon Polygon;
+    typedef GeomPolygon::Vector Vector;
+    typedef GeomPolygon::Facet Facet;
 """
 
     #...........................................................................
@@ -138,10 +137,6 @@ indices that define the facets."""
     def facetSubVolume(self, facetID="const unsigned"):
         "Decompose the polygon into triangles for each facet"
         return "Polygon"
-
-    def transform(self, t="const Tensor&"):
-        "Apply a general transformation tensor"
-        return "Polygon&"
 
     #...........................................................................
     # Operators

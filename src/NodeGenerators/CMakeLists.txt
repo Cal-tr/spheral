@@ -33,7 +33,6 @@ spheral_install_python_files(
   CompositeNodeDistribution.py
   distributeNodesGeneric.py
   DistributeNodes.py
-  SortAndDivideRedistributeNodes.py
   ParMETISDistributeNodes.py
   MortonOrderDistributeNodes.py
   PeanoHilbertDistributeNodes.py

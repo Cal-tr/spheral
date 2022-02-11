@@ -117,7 +117,8 @@ SolidCRKSPHHydroBase(const SmoothingScaleBase<Dimension>& smoothingScaleMethod,
                      const HEvolutionType HUpdate,
                      const double epsTensile,
                      const double nTensile,
-                     const bool damageRelieveRubble):
+                     const bool damageRelieveRubble,
+                     const bool negativePressureInDamage):
   CRKSPHHydroBase<Dimension>(smoothingScaleMethod, 
                              dataBase,
                              Q,
@@ -133,6 +134,7 @@ SolidCRKSPHHydroBase(const SmoothingScaleBase<Dimension>& smoothingScaleMethod,
                              epsTensile,
                              nTensile),
   mDamageRelieveRubble(damageRelieveRubble),
+  mNegativePressureInDamage(negativePressureInDamage),
   mDdeviatoricStressDt(FieldStorageType::CopyFields),
   mBulkModulus(FieldStorageType::CopyFields),
   mShearModulus(FieldStorageType::CopyFields),
@@ -227,9 +229,11 @@ registerState(DataBase<Dimension>& dataBase,
 
   // Override the policies for the sound speed and pressure.
   PolicyPointer csPolicy(new StrengthSoundSpeedPolicy<Dimension>());
-  PolicyPointer Ppolicy(new DamagedPressurePolicy<Dimension>());
   state.enroll(cs, csPolicy);
-  state.enroll(P, Ppolicy);
+  if (not mNegativePressureInDamage) {
+    PolicyPointer Ppolicy(new DamagedPressurePolicy<Dimension>());
+    state.enroll(P, Ppolicy);
+  }
 
   // Register the damage with a default no-op update.
   // If there are any damage models running they can override this choice.

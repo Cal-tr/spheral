@@ -82,6 +82,7 @@ class %(classname)s%(dim)s(SolidSPHHydroBase%(dim)s):
                  epsTensile = 0.0,
                  nTensile = 4.0,
                  damageRelieveRubble = False,
+                 negativePressureInDamage = False,
                  strengthInDamage = False,
                  xmin = Vector%(dim)s(-1e100, -1e100, -1e100),
                  xmax = Vector%(dim)s( 1e100,  1e100,  1e100)):
@@ -111,6 +112,7 @@ class %(classname)s%(dim)s(SolidSPHHydroBase%(dim)s):
                                           epsTensile,
                                           nTensile,
                                           damageRelieveRubble,
+                                          negativePressureInDamage,
                                           strengthInDamage,
                                           xmin,
                                           xmax)
@@ -259,6 +261,7 @@ class %(classname)s(SolidSPHHydroBaseRZ):
                  epsTensile = 0.0,
                  nTensile = 4.0,
                  damageRelieveRubble = False,
+                 negativePressureInDamage = False,
                  strengthInDamage = False,
                  xmin = Vector2d(-1e100, -1e100),
                  xmax = Vector2d( 1e100,  1e100),
@@ -291,6 +294,7 @@ class %(classname)s(SolidSPHHydroBaseRZ):
                                      epsTensile,
                                      nTensile,
                                      damageRelieveRubble,
+                                     negativePressureInDamage,
                                      strengthInDamage,
                                      xmin,
                                      xmax)
@@ -354,6 +358,7 @@ def SPH(dataBase,
         epsTensile = 0.0,
         nTensile = 4.0,
         damageRelieveRubble = False,
+        negativePressureInDamage = False,
         strengthInDamage = False,
         xmin = (-1e100, -1e100, -1e100),
         xmax = ( 1e100,  1e100,  1e100),
@@ -430,6 +435,7 @@ def SPH(dataBase,
 
     if nsolid > 0:
         kwargs.update({"damageRelieveRubble"      : damageRelieveRubble,
+                       "negativePressureInDamage" : negativePressureInDamage,
                        "strengthInDamage"         : strengthInDamage})
 
     # Build and return the thing.
@@ -458,6 +464,7 @@ def ASPH(dataBase,
          epsTensile = 0.0,
          nTensile = 4.0,
          damageRelieveRubble = False,
+         negativePressureInDamage = False,
          strengthInDamage = False,
          xmin = (-1e100, -1e100, -1e100),
          xmax = ( 1e100,  1e100,  1e100)):
@@ -479,6 +486,7 @@ def ASPH(dataBase,
                epsTensile = epsTensile,
                nTensile = nTensile,
                damageRelieveRubble = damageRelieveRubble,
+               negativePressureInDamage = negativePressureInDamage,
                strengthInDamage = strengthInDamage,
                xmin = xmin,
                xmax = xmax,

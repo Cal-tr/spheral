@@ -26,6 +26,7 @@ public:
 
   // Get the instance.
   static RedistributionRegistrar& instance();
+  static RedistributionRegistrar* instancePtr();
 
   // Methods for registering a RedistributionNotificationHandle.
   void registerRedistributionNotificationHandle(std::shared_ptr<RedistributionNotificationHandle> redistributionHandlePtr);
@@ -48,6 +49,9 @@ public:
 
 private:
   //------------------------===== Private Interface =====----------------------//
+  // The one and only instance.
+  static RedistributionRegistrar* mInstancePtr;
+
   // The list of RedistributionNotificationHandles.
   RedistributionNotificationHandleContainer mRedistributionNotificationHandles;
 
@@ -60,7 +64,9 @@ private:
 
 }
 
+#ifndef __GCCXML__
 #include "RedistributionRegistrarInline.hh"
+#endif
 
 #else
 

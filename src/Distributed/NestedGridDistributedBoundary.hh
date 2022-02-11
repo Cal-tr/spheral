@@ -37,6 +37,7 @@ public:
 
   // This method returns the singleton instance of the object.
   static NestedGridDistributedBoundary& instance();
+  static NestedGridDistributedBoundary* instancePtr();
 
   // Destructor.
   virtual ~NestedGridDistributedBoundary();
@@ -85,6 +86,9 @@ public:
 
 private:
   //--------------------------- Private Interface ---------------------------//
+  // Singleton instance pointer.
+  static NestedGridDistributedBoundary* mInstance;
+
   // List of the occupied grid cells, in the order [process][gridLevel][gridCell].
   std::vector< std::vector< std::vector< GridCellIndex<Dimension> > > > mOccupiedGridCells;
 
@@ -106,8 +110,6 @@ private:
 };
 
 }
-
-#include "NestedGridDistributedBoundaryInline.hh"
 
 #else
 

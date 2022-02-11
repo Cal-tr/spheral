@@ -13,9 +13,33 @@
 namespace Spheral {
 
 //------------------------------------------------------------------------------
+// Instance
+//------------------------------------------------------------------------------
+GeometryRegistrar&
+GeometryRegistrar::instance() {
+  if (mInstancePtr == 0) mInstancePtr = new GeometryRegistrar;
+  CHECK(mInstancePtr != 0);
+  return *mInstancePtr;
+}
+
+//------------------------------------------------------------------------------
 // Constructor (private)
 //------------------------------------------------------------------------------
 GeometryRegistrar::GeometryRegistrar(){
+}
+
+//------------------------------------------------------------------------------
+// Copy constructor (private)
+//------------------------------------------------------------------------------
+GeometryRegistrar::GeometryRegistrar(const GeometryRegistrar&) {
+}
+
+//------------------------------------------------------------------------------
+// Assignment (private)
+//------------------------------------------------------------------------------
+GeometryRegistrar&
+GeometryRegistrar::operator=(const GeometryRegistrar&) {
+  return *mInstancePtr;
 }
 
 //------------------------------------------------------------------------------
@@ -27,6 +51,6 @@ GeometryRegistrar::~GeometryRegistrar() {
 //------------------------------------------------------------------------------
 // Initializations
 //------------------------------------------------------------------------------
+GeometryRegistrar* GeometryRegistrar::mInstancePtr = 0;
 CoordinateType GeometryRegistrar::mCoords = CoordinateType::Cartesian;
-
 }

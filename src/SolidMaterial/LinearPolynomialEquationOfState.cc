@@ -40,7 +40,6 @@ LinearPolynomialEquationOfState(const double referenceDensity,
                                 const double externalPressure,
                                 const double minimumPressure,
                                 const double maximumPressure,
-                                const double minimumPressureDamage,
                                 const MaterialPressureMinType minPressureType):
   SolidEquationOfState<Dimension>(referenceDensity,
                                   etamin,
@@ -48,7 +47,6 @@ LinearPolynomialEquationOfState(const double referenceDensity,
                                   constants,
                                   minimumPressure,
                                   maximumPressure,
-                                  minimumPressureDamage,
                                   minPressureType),
   mA0(a0),
   mA1(a1),
@@ -79,14 +77,12 @@ LinearPolynomialEquationOfState<Dimension>::
 template<typename Dimension>
 void
 LinearPolynomialEquationOfState<Dimension>::
-setPressure(Field<Dimension, Scalar>& pressure,
+setPressure(Field<Dimension, Scalar>& Pressure,
             const Field<Dimension, Scalar>& massDensity,
             const Field<Dimension, Scalar>& specificThermalEnergy) const {
   REQUIRE(valid());
-  const auto n = massDensity.size();
-#pragma omp parallel for
-  for (auto i = 0u; i < n; ++i) {
-    pressure(i) = this->pressure(massDensity(i), specificThermalEnergy(i));
+  for (auto i = 0u; i != Pressure.size(); ++i) {
+    Pressure(i) = this->pressure(massDensity(i), specificThermalEnergy(i));
   }
 }
 
@@ -100,9 +96,7 @@ setTemperature(Field<Dimension, Scalar>& temperature,
                const Field<Dimension, Scalar>& massDensity,
                const Field<Dimension, Scalar>& specificThermalEnergy) const {
   REQUIRE(valid());
-  const auto n = massDensity.size();
-#pragma omp parallel for
-  for (auto i = 0u; i < n; ++i) {
+  for (auto i = 0u; i != temperature.size(); ++i) {
     temperature(i) = this->temperature(massDensity(i), specificThermalEnergy(i));
   }
 }
@@ -117,9 +111,7 @@ setSpecificThermalEnergy(Field<Dimension, Scalar>& specificThermalEnergy,
                          const Field<Dimension, Scalar>& massDensity,
                          const Field<Dimension, Scalar>& temperature) const {
   REQUIRE(valid());
-  const auto n = massDensity.size();
-#pragma omp parallel for
-  for (auto i = 0u; i < n; ++i) {
+  for (auto i = 0u; i != specificThermalEnergy.size(); ++i) {
     specificThermalEnergy(i) = this->specificThermalEnergy(massDensity(i), temperature(i));
   }
 }
@@ -147,9 +139,7 @@ setSoundSpeed(Field<Dimension, Scalar>& soundSpeed,
               const Field<Dimension, Scalar>& massDensity,
               const Field<Dimension, Scalar>& specificThermalEnergy) const {
   REQUIRE(valid());
-  const auto n = massDensity.size();
-#pragma omp parallel for
-  for (auto i = 0u; i < n; ++i) {
+  for (auto i = 0u; i != soundSpeed.size(); ++i) {
     soundSpeed(i) = this->soundSpeed(massDensity(i), specificThermalEnergy(i));
   }
 }
@@ -178,9 +168,7 @@ setBulkModulus(Field<Dimension, Scalar>& bulkModulus,
                const Field<Dimension, Scalar>& massDensity,
                const Field<Dimension, Scalar>& specificThermalEnergy) const {
   REQUIRE(valid());
-  const auto n = massDensity.size();
-#pragma omp parallel for
-  for (auto i = 0u; i < n; ++i) {
+  for (auto i = 0u; i != bulkModulus.size(); ++i) {
     bulkModulus(i)=this->bulkModulus(massDensity(i), specificThermalEnergy(i));
   }
 }
@@ -195,9 +183,7 @@ setEntropy(Field<Dimension, Scalar>& entropy,
            const Field<Dimension, Scalar>& massDensity,
            const Field<Dimension, Scalar>& specificThermalEnergy) const {
   CHECK(valid());
-  const auto n = massDensity.size();
-#pragma omp parallel for
-  for (auto i = 0u; i < n; ++i) {
+  for (size_t i = 0; i != massDensity.numElements(); ++i) {
     entropy(i) = pressure(massDensity(i), specificThermalEnergy(i))*safeInvVar(pow(massDensity(i), mGamma));
   }
 }

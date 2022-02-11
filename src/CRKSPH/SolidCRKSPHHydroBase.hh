@@ -54,7 +54,8 @@ public:
                        const HEvolutionType HUpdate,
                        const double epsTensile,
                        const double nTensile,
-                       const bool damageRelieveRubble);
+                       const bool damageRelieveRubble,
+                       const bool negativePressureInDamage);
 
   // Destructor.
   virtual ~SolidCRKSPHHydroBase();
@@ -104,6 +105,10 @@ public:
   bool damageRelieveRubble() const;
   void damageRelieveRubble(bool x);
 
+  // Do we allow damaged material to have negative pressure?
+  bool negativePressureInDamage() const;
+  void negativePressureInDamage(bool x);
+
   //****************************************************************************
   // Methods required for restarting.
   virtual std::string label() const override { return "SolidCRKSPHHydroBase"; }
@@ -113,7 +118,7 @@ public:
 
 protected:
   //--------------------------- Protected Interface ---------------------------//
-  bool mDamageRelieveRubble;
+  bool mDamageRelieveRubble, mNegativePressureInDamage;
 
 private:
   //--------------------------- Private Interface ---------------------------//

@@ -24,7 +24,6 @@ set (_python_packages
   SPH
   CRKSPH
   SVPH
-  GSPH
   FSISPH
   ArtificialViscosity
   Mesh

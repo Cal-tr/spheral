@@ -37,6 +37,7 @@ public:
 
   // This method returns the singleton instance of the object.
   static BoundingVolumeDistributedBoundary& instance();
+  static BoundingVolumeDistributedBoundary* instancePtr();
 
   // Destructor.
   virtual ~BoundingVolumeDistributedBoundary();
@@ -49,6 +50,9 @@ public:
 
 private:
   //--------------------------- Private Interface ---------------------------//
+  // Singleton instance pointer.
+  static BoundingVolumeDistributedBoundary* mInstance;
+
   // Disabled methods.
   BoundingVolumeDistributedBoundary();
   BoundingVolumeDistributedBoundary(const BoundingVolumeDistributedBoundary&);
@@ -63,8 +67,6 @@ private:
 };
 
 }
-
-#include "BoundingVolumeDistributedBoundaryInline.hh"
 
 #else
 

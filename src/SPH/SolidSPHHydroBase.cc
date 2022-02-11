@@ -132,6 +132,7 @@ SolidSPHHydroBase(const SmoothingScaleBase<Dimension>& smoothingScaleMethod,
                   const double epsTensile,
                   const double nTensile,
                   const bool damageRelieveRubble,
+                  const bool negativePressureInDamage,
                   const bool strengthInDamage,
                   const Vector& xmin,
                   const Vector& xmax):
@@ -156,6 +157,7 @@ SolidSPHHydroBase(const SmoothingScaleBase<Dimension>& smoothingScaleMethod,
                           xmin,
                           xmax),
   mDamageRelieveRubble(damageRelieveRubble),
+  mNegativePressureInDamage(negativePressureInDamage),
   mStrengthInDamage(strengthInDamage),
   mGradKernel(WGrad),
   mDdeviatoricStressDt(FieldStorageType::CopyFields),
@@ -276,9 +278,11 @@ registerState(DataBase<Dimension>& dataBase,
 
   // Override the policies for the sound speed and pressure.
   PolicyPointer csPolicy(new StrengthSoundSpeedPolicy<Dimension>());
-  PolicyPointer Ppolicy(new DamagedPressurePolicy<Dimension>());
   state.enroll(cs, csPolicy);
-  state.enroll(P, Ppolicy);
+  if (not mNegativePressureInDamage) {
+    PolicyPointer Ppolicy(new DamagedPressurePolicy<Dimension>());
+    state.enroll(P, Ppolicy);
+  }
 
   // Register the damage with a default no-op update.
   // If there are any damage models running they can override this choice.

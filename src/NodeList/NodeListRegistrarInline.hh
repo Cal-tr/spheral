@@ -14,8 +14,9 @@ inline
 NodeListRegistrar<Dimension>&
 NodeListRegistrar<Dimension>::
 instance() {
-  static NodeListRegistrar theInstance;
-  return theInstance;
+  if (mInstancePtr == 0) mInstancePtr = new NodeListRegistrar;
+  CHECK(mInstancePtr != 0);
+  return *mInstancePtr;
 }
 
 //------------------------------------------------------------------------------

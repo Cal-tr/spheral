@@ -45,7 +45,6 @@ public:
                          const double externalPressure,
                          const double minimumPressure,
                          const double maximumPressure,
-                         const double minimumPressureDamage,
                          const MaterialPressureMinType minPressureType);
   virtual ~OsborneEquationOfState();
 

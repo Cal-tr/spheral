@@ -30,7 +30,8 @@ public:
   //----------------------------------------------------------------------------
   GeomFacet3d();
   GeomFacet3d(const std::vector<Vector>& vertices,
-              const std::vector<unsigned>& ipoints);
+              const std::vector<unsigned>& ipoints,
+              const Vector& normal);
   GeomFacet3d(const GeomFacet3d& rhs);
   GeomFacet3d& operator=(const GeomFacet3d& rhs);
   ~GeomFacet3d();
@@ -72,9 +73,6 @@ public:
   
   // Split into triangular sub-facets.
   std::vector<GeomFacet3d> triangles() const;
-
-  // Recompute the normal
-  void computeNormal();
 
 private:
   //--------------------------- Private Interface ---------------------------//

@@ -25,9 +25,8 @@ class ANEOS(SolidEquationOfState):
                Tmax = "double", 
                constants = "const PhysicalConstants&",
                externalPressure = ("const double", "0.0"),
-               minimumPressure = ("const double", "std::numeric_limits<double>::lowest()"),
+               minimumPressure = ("const double", "-std::numeric_limits<double>::max()"),
                maximumPressure = ("const double",  "std::numeric_limits<double>::max()"),
-               minimumPressureDamage = ("const double", "0.0"),
                minPressureType = ("const MaterialPressureMinType", "MaterialPressureMinType::PressureFloor"),
                useInterpolation = ("const bool", "true")):
         """ANEOS constructor

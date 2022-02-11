@@ -56,6 +56,7 @@ public:
                     const double epsTensile,
                     const double nTensile,
                     const bool damageRelieveRubble,
+                    const bool negativePressureInDamage,
                     const bool strengthInDamage,
                     const Vector& xmin,
                     const Vector& xmax);
@@ -111,6 +112,10 @@ public:
   bool damageRelieveRubble() const;
   void damageRelieveRubble(bool x);
 
+  // Do we allow damaged material to have negative pressure?
+  bool negativePressureInDamage() const;
+  void negativePressureInDamage(bool x);
+
   // Do we allow damaged material to have strength?
   bool strengthInDamage() const;
   void strengthInDamage(bool x);
@@ -124,7 +129,7 @@ public:
 
 protected:
   //--------------------------- Protected Interface ---------------------------//
-  bool mDamageRelieveRubble, mStrengthInDamage;
+  bool mDamageRelieveRubble, mNegativePressureInDamage, mStrengthInDamage;
 
 private:
   //--------------------------- Private Interface ---------------------------//

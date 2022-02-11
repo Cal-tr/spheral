@@ -28,9 +28,10 @@ condition for use with NestedGridNeighbor based NodeLists."""
 
     # The instance attribute.  We expose this as a property of the class.
     @PYB11static
-    @PYB11returnpolicy("reference")
+    @PYB11cppname("instancePtr")
+    @PYB11returnpolicy("take_ownership")
     def instance(self):
-        return "NestedGridDistributedBoundary<%(Dimension)s>&"
+        return "NestedGridDistributedBoundary<%(Dimension)s>*"
 
     #...........................................................................
     # Methods

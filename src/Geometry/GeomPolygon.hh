@@ -18,9 +18,8 @@ namespace Spheral {
 class GeomPolygon {
 public:
   //--------------------------- Public Interface ---------------------------//
-  using Vector = GeomVector<2>;
-  using Tensor = GeomTensor<2>;
-  using Facet = GeomFacet2d;
+  typedef GeomVector<2> Vector;
+  typedef GeomFacet2d Facet;
 
   //----------------------------------------------------------------------------
   // Constructors, assignment, destructor.
@@ -115,9 +114,6 @@ public:
   GeomPolygon& operator/=(const double rhs);
   GeomPolygon operator*(const double rhs) const;
   GeomPolygon operator/(const double rhs) const;
-
-  // Apply a tensor transformation
-  GeomPolygon& transform(const Tensor& t);
 
   // Comparisons.
   bool operator==(const GeomPolygon& rhs) const;

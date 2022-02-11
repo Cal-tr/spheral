@@ -23,8 +23,9 @@ owns the set of vertex positions."""
 
     def pyinit1(self,
                 vertices = "const std::vector<Vector>&",
-                ipoints = "const std::vector<unsigned>&"):
-        "Explicit constructor with vertices and point indices"
+                ipoints = "const std::vector<unsigned>&",
+                normal = "const Vector&"):
+        "Explicit constructor with vertices, point indices, and normal"
 
     #...........................................................................
     # Methods

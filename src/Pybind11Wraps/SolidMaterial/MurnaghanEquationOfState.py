@@ -31,7 +31,6 @@ class MurnaghanEquationOfState(SolidEquationOfState):
                externalPressure = ("const double", "0.0"),
                minimumPressure = ("const double", "std::numeric_limits<double>::lowest()"),
                maximumPressure = ("const double", "std::numeric_limits<double>::max()"),
-               minimumPressureDamage = ("const double", "0.0"),
                minPressureType = ("const MaterialPressureMinType", "MaterialPressureMinType::PressureFloor")):
         "Murnaghan EOS"
 

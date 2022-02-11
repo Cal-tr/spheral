@@ -42,6 +42,27 @@ struct CompareWeakPtr: public std::binary_function<std::weak_ptr<T>, std::weak_p
 };
 
 //------------------------------------------------------------------------------
+// Get the instance.
+//------------------------------------------------------------------------------
+RestartRegistrar&
+RestartRegistrar::
+instance() {
+  return *RestartRegistrar::instancePtr();
+}
+
+//------------------------------------------------------------------------------
+// Get the instance (pointer).
+//------------------------------------------------------------------------------
+RestartRegistrar*
+RestartRegistrar::
+instancePtr() {
+   if (mInstancePtr == 0) mInstancePtr = new RestartRegistrar;
+   CHECK(mInstancePtr != 0);
+   mInstancePtr->removeExpiredPointers();
+   return mInstancePtr;
+}
+
+//------------------------------------------------------------------------------
 // Register a RestartHandle.
 //------------------------------------------------------------------------------
 void
@@ -214,3 +235,8 @@ RestartRegistrar::
 }
 
 }
+
+//------------------------------------------------------------------------------
+// Initialize the static instance pointer.
+//-----------------------------------------------------------------------------
+Spheral::RestartRegistrar* Spheral::RestartRegistrar::mInstancePtr = 0;
