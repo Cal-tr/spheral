@@ -51,6 +51,7 @@ set(Kernel_headers
     SincKernel.hh
     SincKernelInline.hh
     SphericalTableKernel.hh
+    SphericalTableKernelInline.hh
     SuperGaussianKernel.hh
     SuperGaussianKernelInline.hh
     TableKernel.hh
