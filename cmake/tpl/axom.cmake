@@ -35,6 +35,7 @@ if(${lib_name}_BUILD)
                -DAXOM_ENABLE_SPIN=Off
                -DAXOM_ENABLE_QUEST=Off
                -DENABLE_TESTS=Off
+               -DAXOM_USE_HDF5=On
 
                -DCONDUIT_DIR=${CONDUIT_INSTALL_DIR}
                -DHDF5_DIR=${hdf5_DIR}

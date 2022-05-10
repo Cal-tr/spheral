@@ -13,6 +13,13 @@
 #ATS:t4 = test(      SELF, "--graphics None --clearDirectories True  --checkError True  --dataDir 'dumps-planar-reproducing' --domainIndependent True --outputFile 'Noh-planar-1proc-reproducing.txt'", label="Planar Noh problem -- 1-D (serial reproducing test setup)")
 #ATS:t5 = testif(t4, SELF, "--graphics None --clearDirectories False  --checkError True  --dataDir 'dumps-planar-reproducing' --domainIndependent True --outputFile 'Noh-planar-4proc-reproducing.txt' --comparisonFile 'Noh-planar-1proc-reproducing.txt'", np=4, label="Planar Noh problem -- 1-D (4 proc reproducing test)")
 #
+# Ordinary SPH restart check for SidreFileIO
+#
+#ATS:t10 = test(       SELF, "--graphics None --clearDirectories True  --checkError True   --dataDir 'dumps-planar-sidre' --restartStep 20 --restartFileConstructor SidreFileIO", label="Planar Noh problem -- 1-D (serial) with Sidre")
+#ATS:t11 = testif(t10, SELF, "--graphics None --clearDirectories False --checkError False  --dataDir 'dumps-planar-sidre' --restartStep 20 --restartFileConstructor SidreFileIO --restoreCycle 20 --steps 20 --checkRestart True", label="Planar Noh problem -- 1-D (serial) RESTART CHECK with Sidre")
+#ATS:t12 = test(       SELF, "--graphics None --clearDirectories True  --checkError True  --dataDir 'dumps-planar-sidre-parrallel' --restartStep 20 --restartFileConstructor SidreFileIO", np=2, label="Planar Noh problem -- 1-D (parallel)")
+#ATS:t13 = testif(t12, SELF, "--graphics None --clearDirectories False --checkError False --dataDir 'dumps-planar-sidre-parrallel' --restartStep 20 --restartFileConstructor SidreFileIO --restoreCycle 20 --steps 20 --checkRestart True", np=2, label="Planar Noh problem -- 1-D (parallel) RESTART CHECK")
+#
 # Ordinary solid SPH
 #
 #ATS:t100 = test(        SELF, "--solid True --graphics None --clearDirectories True  --checkError True   --restartStep 20", label="Planar Noh problem with solid SPH -- 1-D (serial)")
@@ -37,11 +44,28 @@
 # Solid FSISPH
 #
 #ATS:t400 = test(        SELF, "--fsisph True --solid True --graphics None --clearDirectories True --checkError True --restartStep 20", label="Planar Noh problem with FSISPH -- 1-D (serial)")
-#ATS:t401 = testif(t400, SELF, "--fsisph True --solid True --graphics None --clearDirectories False --checkError True --restartStep 20 --restoreCycle 20 --steps 20 --checkRestart True", label="Planar Noh problem with FSISPH -- 1-D (serial) RESTART CHECK")
+#ATS:t401 = testif(t400, SELF, "--fsisph True --solid True --graphics None --clearDirectories False --checkError False --restartStep 20 --restoreCycle 20 --steps 20 --checkRestart True", label="Planar Noh problem with FSISPH -- 1-D (serial) RESTART CHECK")
+#
+# GSPH
+#
+#ATS:t500 = test(        SELF, "--gsph True --gsphReconstructionGradient=RiemannGradient --graphics None --clearDirectories True --checkError True --restartStep 20", label="Planar Noh problem with GSPH and RiemannGradient -- 1-D (serial)")
+#ATS:t501 = testif(t500, SELF, "--gsph True --gsphReconstructionGradient=RiemannGradient --graphics None --clearDirectories False --checkError False --restartStep 20 --restoreCycle 20 --steps 20 --checkRestart True", label="Planar Noh problem with GSPH and RiemannGradient -- 1-D (serial) RESTART CHECK")
+#ATS:t502 = test(        SELF, "--gsph True --gsphReconstructionGradient=HydroAccelerationGradient --graphics None --clearDirectories True --checkError True --restartStep 20", label="Planar Noh problem with GSPH and and HydroAccelerationGradient -- 1-D (serial)")
+#ATS:t503 = testif(t502, SELF, "--gsph True --gsphReconstructionGradient=HydroAccelerationGradient --graphics None --clearDirectories False --checkError False --restartStep 20 --restoreCycle 20 --steps 20 --checkRestart True", label="Planar Noh problem with GSPH and HydroAccelerationGradient -- 1-D (serial) RESTART CHECK")
+#ATS:t504 = test(        SELF, "--gsph True --gsphReconstructionGradient=SPHGradient --graphics None --clearDirectories True --checkError True --restartStep 20", label="Planar Noh problem with GSPH and SPHGradient -- 1-D (serial)")
+#ATS:t505 = testif(t504, SELF, "--gsph True --gsphReconstructionGradient=SPHGradient --graphics None --clearDirectories False --checkError False --restartStep 20 --restoreCycle 20 --steps 20 --checkRestart True", label="Planar Noh problem with GSPH and SPHGradient -- 1-D (serial) RESTART CHECK")
+#
+# MFM
+#
+#ATS:t600 = test(        SELF, "--mfm True --gsphReconstructionGradient=RiemannGradient --graphics None --clearDirectories True --checkError False --restartStep 20", label="Planar Noh problem with MFM  -- 1-D (serial)")
+#ATS:t601 = testif(t600, SELF, "--mfm True --gsphReconstructionGradient=RiemannGradient --graphics None --clearDirectories False --checkError False --restartStep 20 --restoreCycle 20 --steps 20 --checkRestart True", label="Planar Noh problem with MFM -- 1-D (serial) RESTART CHECK")
 
-import os, shutil
+import os, shutil, sys
 from SolidSpheral1d import *
 from SpheralTestUtilities import *
+
+from GenerateNodeDistribution1d import GenerateNodeDistribution1d
+from SortAndDivideRedistributeNodes import distributeNodes1d
 
 title("1-D integrated hydro test -- planar Noh problem")
 
@@ -73,6 +97,8 @@ commandLine(KernelConstructor = NBSplineKernel,
             crksph = False,
             psph = False,
             fsisph = False,
+            gsph = False,
+            mfm = False,
             crktype = "default",        # one of ("default", "variant")
             evolveTotalEnergy = False,  # Only for SPH variants -- evolve total rather than specific energy
             boolReduceViscosity = False,
@@ -149,31 +175,32 @@ commandLine(KernelConstructor = NBSplineKernel,
             restartStep = 10000,
             dataDirBase = "dumps-planar-Noh",
             restartBaseName = "Noh-planar-1d",
+            restartFileConstructor = SiloFileIO,
             outputFile = "None",
             comparisonFile = "None",
             normOutputFile = "None",
             writeOutputLabel = True,
 
             # Parameters for the test acceptance.,
-            L1rho =   0.0713445       ,
-            L2rho =   0.0193689       ,
-            Linfrho = 2.31211         ,
-
-            L1P =     0.0246952       ,
-            L2P =     0.0072287       ,
-            LinfP =   0.966204        ,
-
-            L1v =     0.0386543       ,
-            L2v =     0.0104419       ,
-            Linfv =   0.945782        ,
-
-            L1eps =   0.0140886       ,
-            L2eps =   0.00398204      ,
-            Linfeps = 0.437577        ,
-
-            L1h =     0.000547739     ,
-            L2h =     0.000131918     ,
-            Linfh =   0.00916578      ,
+            L1rho =   0.0543413,   
+            L2rho =   0.0147691,   
+            Linfrho = 1.66503,     
+                                   
+            L1P =     0.0180769,   
+            L2P =     0.00545035,  
+            LinfP =   0.633995,    
+                                   
+            L1v =     0.0245764,   
+            L2v =     0.00844616,  
+            Linfv =   0.857868,    
+                                   
+            L1eps =   0.0106103,   
+            L2eps =   0.00337624,  
+            Linfeps = 0.356841,    
+                                   
+            L1h =     0.000437201, 
+            L2h =     0.000120092, 
+            Linfh =   0.00848983,  
 
             tol = 1.0e-5,
 
@@ -195,6 +222,10 @@ elif crksph:
                              str(correctionOrder))
 elif fsisph:
     hydroname = "FSISPH"
+elif gsph:
+    hydroname = os.path.join("GSPH",str(gsphReconstructionGradient))
+elif mfm:
+    hydroname = os.path.join("MFM",str(gsphReconstructionGradient))
 elif psph:
     hydroname = "PSPH"
 else:
@@ -216,7 +247,6 @@ dx = (x1 - x0)/nx1
 #-------------------------------------------------------------------------------
 # Check if the necessary output directories exist.  If not, create them.
 #-------------------------------------------------------------------------------
-import os, sys
 if mpi.rank == 0:
     if clearDirectories and os.path.exists(dataDir):
         shutil.rmtree(dataDir)
@@ -264,8 +294,6 @@ output("nodes1.nodesPerSmoothingScale")
 #-------------------------------------------------------------------------------
 # Set the node properties.
 #-------------------------------------------------------------------------------
-from GenerateNodeDistribution1d import GenerateNodeDistribution1d
-from DistributeNodes import distributeNodes1d
 gen = GenerateNodeDistribution1d(n = nx1,
                                  rho = rho1,
                                  xmin = x0,
@@ -352,6 +380,46 @@ elif fsisph:
                    evolveTotalEnergy = evolveTotalEnergy,
                    correctVelocityGradient = correctVelocityGradient,
                    HUpdate = HUpdate)
+elif gsph:
+    limiter = VanLeerLimiter()
+    waveSpeed = DavisWaveSpeed()
+    solver = HLLC(limiter,
+                  waveSpeed,
+                  True)
+    hydro = GSPH(dataBase = db,
+                riemannSolver = solver,
+                W = WT,
+                cfl=cfl,
+                useVelocityMagnitudeForDt = useVelocityMagnitudeForDt,
+                compatibleEnergyEvolution = compatibleEnergy,
+                correctVelocityGradient=correctVelocityGradient,
+                evolveTotalEnergy = evolveTotalEnergy,
+                XSPH = XSPH,
+                gradientType = gsphReconstructionGradient,
+                densityUpdate=densityUpdate,
+                HUpdate = IdealH,
+                epsTensile = epsilonTensile,
+                nTensile = nTensile)
+elif mfm:
+    limiter = VanLeerLimiter()
+    waveSpeed = DavisWaveSpeed()
+    solver = HLLC(limiter,
+                  waveSpeed,
+                  True)
+    hydro = MFM(dataBase = db,
+                riemannSolver = solver,
+                W = WT,
+                cfl=cfl,
+                useVelocityMagnitudeForDt = useVelocityMagnitudeForDt,
+                compatibleEnergyEvolution = compatibleEnergy,
+                correctVelocityGradient=correctVelocityGradient,
+                evolveTotalEnergy = evolveTotalEnergy,
+                XSPH = XSPH,
+                gradientType = gsphReconstructionGradient,
+                densityUpdate=densityUpdate,
+                HUpdate = IdealH,
+                epsTensile = epsilonTensile,
+                nTensile = nTensile)
 else:
     hydro = SPH(dataBase = db,
                 W = WT,
@@ -383,34 +451,35 @@ packages = [hydro]
 #-------------------------------------------------------------------------------
 # Set the artificial viscosity parameters.
 #-------------------------------------------------------------------------------
-q = hydro.Q
-if not Cl is None:
-    q.Cl = Cl
-if not Cq is None:
-    q.Cq = Cq
-if not epsilon2 is None:
-    q.epsilon2 = epsilon2
-if not Qlimiter is None:
-    q.limiter = Qlimiter
-if not balsaraCorrection is None:
-    q.balsaraShearCorrection = balsaraCorrection
-if not QcorrectionOrder is None:
-    q.QcorrectionOrder = QcorrectionOrder
-output("q")
-output("q.Cl")
-output("q.Cq")
-output("q.epsilon2")
-output("q.limiter")
-output("q.balsaraShearCorrection")
-if hasattr(q, "linearInExpansion") and not linearInExpansion is None:
-    q.linearInExpansion = linearInExpansion
-    output("q.linearInExpansion")
-if hasattr(q, "quadraticInExpansion") and not quadraticInExpansion is None:
-    q.quadraticInExpansion = quadraticInExpansion
-    output("q.quadraticInExpansion")
-if hasattr(q, "etaCritFrac") and not etaCritFrac is None:
-    q.etaCritFrac = etaCritFrac
-    output("q.etaCritFrac")
+if not (gsph or mfm):
+    q = hydro.Q
+    if not Cl is None:
+        q.Cl = Cl
+    if not Cq is None:
+        q.Cq = Cq
+    if not epsilon2 is None:
+        q.epsilon2 = epsilon2
+    if not Qlimiter is None:
+        q.limiter = Qlimiter
+    if not balsaraCorrection is None:
+        q.balsaraShearCorrection = balsaraCorrection
+    if not QcorrectionOrder is None:
+        q.QcorrectionOrder = QcorrectionOrder
+    output("q")
+    output("q.Cl")
+    output("q.Cq")
+    output("q.epsilon2")
+    output("q.limiter")
+    output("q.balsaraShearCorrection")
+    if hasattr(q, "linearInExpansion") and not linearInExpansion is None:
+        q.linearInExpansion = linearInExpansion
+        output("q.linearInExpansion")
+    if hasattr(q, "quadraticInExpansion") and not quadraticInExpansion is None:
+        q.quadraticInExpansion = quadraticInExpansion
+        output("q.quadraticInExpansion")
+    if hasattr(q, "etaCritFrac") and not etaCritFrac is None:
+        q.etaCritFrac = etaCritFrac
+        output("q.etaCritFrac")
 
 #-------------------------------------------------------------------------------
 # Construct the MMRV physics object.
@@ -509,6 +578,7 @@ control = SpheralController(integrator,
                             statsStep = statsStep,
                             restartStep = restartStep,
                             restartBaseName = restartBaseName,
+                            restartFileConstructor = restartFileConstructor,
                             restoreCycle = restoreCycle,
                             timerName = timerName
                             )
@@ -737,7 +807,7 @@ if mpi.rank == 0 :
            
 
         if checkError:
-            if not crksph and not psph and not fsisph: # if sph use the known error norms
+            if not crksph and not psph and not fsisph and not gsph and not mfm: # if sph use the known error norms
                 if not fuzzyEqual(L1, L1expect, tol):
                     print "L1 error estimate for %s outside expected bounds: %g != %g" % (name,
                                                                                       L1,
@@ -756,7 +826,7 @@ if mpi.rank == 0 :
                 if failure:
                     raise ValueError, "Error bounds violated."
 
-            if fsisph: # for fsi check if the norms are order of mag same as sph 
+            if fsisph or gsph or mfm: # for fsi check if the norms are order of mag same as sph 
             
                 if L1 > 2.0*L1expect:
                     print "L1 error estimate for %s outside expected bounds: %g != %g" % (name,

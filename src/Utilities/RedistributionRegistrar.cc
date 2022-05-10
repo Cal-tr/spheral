@@ -127,7 +127,8 @@ removeExpiredPointers() {
 //------------------------------------------------------------------------------
 void
 RedistributionRegistrar::
-preRedistributionNotifications() const {
+preRedistributionNotifications() {
+  removeExpiredPointers();
   for (const_iterator itr = begin(); itr != end(); ++itr) itr->lock()->notifyBeforeRedistribution();
 }
 
@@ -136,7 +137,8 @@ preRedistributionNotifications() const {
 //------------------------------------------------------------------------------
 void
 RedistributionRegistrar::
-broadcastRedistributionNotifications() const {
+broadcastRedistributionNotifications() {
+  removeExpiredPointers();
   for (const_iterator itr = begin(); itr != end(); ++itr) itr->lock()->notifyAfterRedistribution();
 }
 

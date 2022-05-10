@@ -147,22 +147,15 @@ commandLine(
 
 assert not(boolReduceViscosity and boolCullenViscosity)
 # Decide on our hydro algorithm.
-if SVPH:
-    if SPH:
-        HydroConstructor = SVPHFacetedHydro
-    else:
-        HydroConstructor = ASVPHFacetedHydro
-elif CRKSPH:
-    Qconstructor = CRKSPHMonaghanGingoldViscosity
-    if SPH:
-        HydroConstructor = CRKSPHHydro
-    else:
-        HydroConstructor = ACRKSPHHydro
-elif PSPH:
-    if SPH:
-        HydroConstructor = PSPHHydro
-    else:
-        HydroConstructor = APSPHHydro
+if svph:
+    hydroname = "SVPH"
+elif crksph:
+    Qconstructor = LimitedMonaghanGingoldViscosity
+    hydroname = "CRKSPH"
+elif psph:
+    hydroname = "PSPH"
+elif fsisph:
+    hydroname = "FSISPH"
 else:
     if SPH:
         HydroConstructor = SPHHydro

@@ -48,15 +48,19 @@ commandLine(
 
     nPerh = 1.51,
 
-    SVPH = False,
-    CRKSPH = False,
-    PSPH = False,
-    ASPH = False,   # This just chooses the H algorithm -- you can use this with CRKSPH for instance.
-    filter = 0.0,  # For CRKSPH
-    KernelConstructor = NBSplineKernel,
-    order = 5,
-    Qconstructor = MonaghanGingoldViscosity,
-    #Qconstructor = TensorMonaghanGingoldViscosity,
+    # CRK options
+    filter = 0.0, 
+    correctionOrder = LinearOrder,
+    volumeType = RKSumVolume,
+
+    # SVPH options
+    fcentroidal = 0.0,
+    fcellPressure = 0.0,
+
+    # artificial viscosity
+    Qconstructor = LimitedMonaghanGingoldViscosity,
+    Cl = 1.0, 
+    Cq = 0.75,
     boolReduceViscosity = False,
     nhQ = 5.0,
     nhL = 10.0,
@@ -126,22 +130,17 @@ commandLine(
 
 assert not(boolReduceViscosity and boolCullenViscosity)
 # Decide on our hydro algorithm.
-if SVPH:
-    if ASPH:
-        HydroConstructor = ASVPHFacetedHydro
-    else:
-        HydroConstructor = SVPHFacetedHydro
-elif CRKSPH:
-    Qconstructor = CRKSPHMonaghanGingoldViscosity
-    if ASPH:
-        HydroConstructor = ACRKSPHHydro
-    else:
-        HydroConstructor = CRKSPHHydro
-elif PSPH:
-    if ASPH:
-        HydroConstructor = APSPHHydro
-    else:
-        HydroConstructor = PSPHHydro
+
+# Decide on our hydro algorithm.
+if svph:
+    hydroname = "SVPH"
+elif crksph:
+    Qconstructor = LimitedMonaghanGingoldViscosity
+    hydroname = "CRKSPH"
+elif psph:
+    hydroname = "PSPH"
+elif fsisph:
+    hydroname = "FSISPH"
 else:
     if ASPH:
         HydroConstructor = ASPHHydro

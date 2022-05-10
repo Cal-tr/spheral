@@ -59,6 +59,9 @@ commandLine(order = 5,
             svph = False,
             crksph = False,
             psph = False,
+            fsisph = False,
+            gsph = False,
+            mfm = False,
             asph = False,   # This just chooses the H algorithm -- you can use this with CRKSPH for instance.
             boolReduceViscosity = False,
             HopkinsConductivity = False,     # For PSPH
@@ -130,6 +133,8 @@ commandLine(order = 5,
             )
 
 assert not(boolReduceViscosity and boolCullenViscosity)
+assert not((gsph or mfm) and (boolReduceViscosity or boolCullenViscosity))
+assert not(fsisph and not solid)
 assert thetaFactor in (0.5, 1.0, 2.0)
 theta = thetaFactor * pi
 
@@ -152,6 +157,10 @@ elif crksph:
     hydroname = os.path.join("CRKSPH",
                              str(correctionOrder),
                              str(volumeType))
+elif gsph:
+    hydroname = "GSPH"
+elif mfm:
+    hydroname = "MFM"
 elif psph:
     hydroname = "PSPH"
 else:
@@ -318,6 +327,57 @@ elif psph:
                  HUpdate = HUpdate,
                  XSPH = XSPH,
                  ASPH = asph)
+elif fsisph:
+    hydro = FSISPH(dataBase = db,
+                   W = WT,
+                   filter = filter,
+                   cfl = cfl,
+                   interfaceMethod = ModulusInterface,
+                   sumDensityNodeLists=[nodes1],                       
+                   densityStabilizationCoefficient = 0.00,
+                   useVelocityMagnitudeForDt = useVelocityMagnitudeForDt,
+                   compatibleEnergyEvolution = compatibleEnergy,
+                   evolveTotalEnergy = evolveTotalEnergy,
+                   correctVelocityGradient = correctVelocityGradient,
+                   HUpdate = HUpdate) 
+elif gsph:
+    limiter = VanLeerLimiter()
+    waveSpeed = DavisWaveSpeed()
+    solver = HLLC(limiter,waveSpeed,True)
+    hydro = GSPH(dataBase = db,
+                riemannSolver = solver,
+                W = WT,
+                cfl=cfl,
+                specificThermalEnergyDiffusionCoefficient = 0.00,
+                compatibleEnergyEvolution = compatibleEnergy,
+                correctVelocityGradient= correctVelocityGradient,
+                evolveTotalEnergy = evolveTotalEnergy,
+                XSPH = XSPH,
+                ASPH = asph,
+                gradientType = RiemannGradient,
+                densityUpdate=densityUpdate,
+                HUpdate = HUpdate,
+                epsTensile = epsilonTensile,
+                nTensile = nTensile)
+elif mfm:
+    limiter = VanLeerLimiter()
+    waveSpeed = DavisWaveSpeed()
+    solver = HLLC(limiter,waveSpeed,True)
+    hydro = MFM(dataBase = db,
+                riemannSolver = solver,
+                W = WT,
+                cfl=cfl,
+                specificThermalEnergyDiffusionCoefficient = 0.00,
+                compatibleEnergyEvolution = compatibleEnergy,
+                correctVelocityGradient= correctVelocityGradient,
+                evolveTotalEnergy = evolveTotalEnergy,
+                XSPH = XSPH,
+                ASPH = asph,
+                gradientType = RiemannGradient,
+                densityUpdate=densityUpdate,
+                HUpdate = HUpdate,
+                epsTensile = epsilonTensile,
+                nTensile = nTensile)
 else:
     hydro = SPH(dataBase = db,
                 W = WT,
@@ -346,28 +406,29 @@ packages = [hydro]
 #-------------------------------------------------------------------------------
 # Set the artificial viscosity parameters.
 #-------------------------------------------------------------------------------
-q = hydro.Q
-if Cl:
-    q.Cl = Cl
-if Cq:
-    q.Cq = Cq
-if epsilon2:
-    q.epsilon2 = epsilon2
-if Qlimiter:
-    q.limiter = Qlimiter
-if balsaraCorrection:
-    q.balsaraShearCorrection = balsaraCorrection
-output("q")
-output("q.Cl")
-output("q.Cq")
-output("q.epsilon2")
-output("q.limiter")
-output("q.balsaraShearCorrection")
-try:
-    output("q.linearInExpansion")
-    output("q.quadraticInExpansion")
-except:
-    pass
+if not (gsph or mfm):
+    q = hydro.Q
+    if Cl:
+        q.Cl = Cl
+    if Cq:
+        q.Cq = Cq
+    if epsilon2:
+        q.epsilon2 = epsilon2
+    if Qlimiter:
+        q.limiter = Qlimiter
+    if balsaraCorrection:
+        q.balsaraShearCorrection = balsaraCorrection
+    output("q")
+    output("q.Cl")
+    output("q.Cq")
+    output("q.epsilon2")
+    output("q.limiter")
+    output("q.balsaraShearCorrection")
+    try:
+        output("q.linearInExpansion")
+        output("q.quadraticInExpansion")
+    except:
+        pass
 
 #-------------------------------------------------------------------------------
 # Construct the MMRV physics object.

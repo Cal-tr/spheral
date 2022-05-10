@@ -4,7 +4,6 @@ include(ExternalProject)
 # Configure CMake
 #-------------------------------------------------------------------------------
 set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -Wno-undefined-var-template")
 set(CMAKE_EXPORT_COMPILE_COMMANDS On)
 
 if (NOT CMAKE_MODULE_PATH)
@@ -14,19 +13,9 @@ endif()
 set(CMAKE_EXPORT_COMPILE_COMMANDS On)
 
 #-------------------------------------------------------------------------------
-# Optionally suppress compiler warnings
+# Set Compiler Flags / Options
 #-------------------------------------------------------------------------------
-option(ENABLE_WARNINGS "show compiler warnings" ON)
-if (NOT ENABLE_WARNINGS)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w")
-endif()
-message("-- compiler warnings ${ENABLE_WARNINGS}")
-
-option(ENABLE_UNUSED_VARIABLE_WARNINGS "show unused variable compiler warnings" ON)
-if (NOT ENABLE_UNUSED_VARIABLE_WARNINGS)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-variable -Wno-unused-parameter")
-endif()
-message("-- compiler unused variable warnings ${ENABLE_UNUSED_VARIABLE_WARNINGS}")
+include(Compilers)
 
 #-------------------------------------------------------------------------------
 # Configure and Include blt

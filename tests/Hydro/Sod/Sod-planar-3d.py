@@ -319,8 +319,39 @@ elif psph:
                  densityUpdate = densityUpdate,
                  HUpdate = HUpdate,
                  XSPH = XSPH,
-                 correctVelocityGradient = correctVelocityGradient,
-                 HopkinsConductivity = HopkinsConductivity)
+                 correctVelocityGradient = correctVelocityGradient)
+elif fsisph:
+    sumDensityNodeLists = [nodes1]
+    if numNodeLists == 2:
+        sumDensityNodeLists += [nodes2]
+    hydro = FSISPH(dataBase = db,
+                   W = WT,
+                   filter = filter,
+                   cfl = cfl,
+                   sumDensityNodeLists=sumDensityNodeLists,                       
+                   densityStabilizationCoefficient = 0.00,
+                   specificThermalEnergyDiffusionCoefficient = 0.00,
+                   interfaceMethod = HLLCInterface,
+                   compatibleEnergyEvolution = compatibleEnergy,
+                   evolveTotalEnergy = evolveTotalEnergy,
+                   correctVelocityGradient = correctVelocityGradient,
+                   HUpdate = HUpdate)
+elif gsph:
+    limiter = VanLeerLimiter()
+    waveSpeed = DavisWaveSpeed()
+    solver = HLLC(limiter,waveSpeed,True)
+    hydro = GSPH(dataBase = db,
+                riemannSolver = solver,
+                W = WT,
+                cfl=cfl,
+                compatibleEnergyEvolution = compatibleEnergy,
+                correctVelocityGradient=correctVelocityGradient,
+                evolveTotalEnergy = evolveTotalEnergy,
+                XSPH = XSPH,
+                densityUpdate=densityUpdate,
+                HUpdate = IdealH,
+                epsTensile = epsilonTensile,
+                nTensile = nTensile)
 else:
     hydro = SPH(dataBase = db,
                 W = WT,

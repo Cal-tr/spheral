@@ -53,9 +53,21 @@ if (ENABLE_MPI)
   list(APPEND pip-modules mpi4py)
 endif()
 
-# Custom python modules to install that need their
-# own install process these will be installed last 
-# as their own dedicated targets
+# Generate our requirements.txt file for runtime python dependencies
+string(REPLACE ";" "\n" pip_rutime_modules_str "${pip-runtime-modules}")
+configure_file(
+  "${SPHERAL_ROOT_DIR}/cmake/tpl/util/requirements.in"
+  "${CMAKE_BINARY_DIR}/scripts/requirements.txt"
+  )
+
+
+install(FILES 
+  "${CMAKE_BINARY_DIR}/scripts/requirements.txt"
+  DESTINATION "${CMAKE_INSTALL_PREFIX}/scripts"
+  )
+#
+# Custom Runtime Python Module Dependencies
+#
 set(pip-custom-modules
     gnuplot
     ats)

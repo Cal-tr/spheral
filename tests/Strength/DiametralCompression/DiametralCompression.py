@@ -407,8 +407,8 @@ if SPHType=="crksph":
                    XSPH = xsph,
                    ASPH = asph)
 
-elif SPHType=="fsisph": 
-    q = CRKSPHMonaghanGingoldViscosity(Cl,Cq)   
+elif fsisph: 
+    q = LimitedMonaghanGingoldViscosity(Cl,Cq)   
     hydro = FSISPH(dataBase = db,
                    Q=q,
                    W = WT,
@@ -873,3 +873,5 @@ if mpi.rank==1:
 #     plt.show()
 
 
+    
+    

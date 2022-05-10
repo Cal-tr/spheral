@@ -293,13 +293,49 @@ output("q.balsaraShearCorrection")
 #-------------------------------------------------------------------------------
 # Construct the hydro physics object.
 #-------------------------------------------------------------------------------
-hydro = Hydro2d(WT, WTPi, q, compatibleEnergy)
-hydro.cfl = cfl
-hydro.useVelocityMagnitudeForDt = True
-hydro.HEvolution = HEvolution
-hydro.sumForMassDensity = sumForMassDensity
-hydro.HsmoothMin = hmin
-hydro.HsmoothMax = hmin
+if crksph:
+    hydro = CRKSPH(dataBase = db,
+                   order = correctionOrder,
+                   cfl = cfl,
+                   compatibleEnergyEvolution = compatibleEnergy,
+                   XSPH = xsph,
+                   densityUpdate = densityUpdate,
+                   HUpdate = HUpdate,
+                   ASPH = asph)
+
+elif fsisph: # FSI branch of spheral
+    q = LimitedMonaghanGingoldViscosity(Cl,Cq)
+    hydro = FSISPH(dataBase = db,
+                Q=q,
+                W = WT,
+                cfl = cfl,
+                densityStabilizationCoefficient = fsiRhoStabCoeff, 
+                specificThermalEnergyDiffusionCoefficient = fsiEpsDiffuseCoeff,  
+                correctVelocityGradient = correctVelocityGradient,
+                compatibleEnergyEvolution = compatibleEnergy,
+                evolveTotalEnergy = evolveTotalEnergy,
+                HUpdate = HUpdate,
+                ASPH = asph,
+                epsTensile = epsilonTensile,
+                nTensile = nTensile,
+                strengthInDamage=False,
+                damageRelieveRubble=False,
+                RZ = False)
+else:
+    hydro = SPH(dataBase = db,
+                W = WT,
+                cfl = cfl,
+                compatibleEnergyEvolution = compatibleEnergy,
+                evolveTotalEnergy = evolveTotalEnergy,
+                gradhCorrection = gradhCorrection,
+                correctVelocityGradient = correctVelocityGradient,
+                densityUpdate = densityUpdate,
+                HUpdate = HUpdate,
+                XSPH = xsph,
+                epsTensile = epsilonTensile,
+                nTensile = nTensile,
+                ASPH = asph)
+
 output("hydro")
 output("hydro.cfl")
 output("hydro.compatibleEnergyEvolution")
