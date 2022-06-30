@@ -3,11 +3,7 @@ set(QHULL_URL "https://github.com/qhull/qhull/archive/2019.1.tar.gz")
 set(QHULL_CACHE "${CACHE_DIR}/2019.1.tar.gz")
 set(QHULL_SRC_DIR ${QHULL_PREFIX}/src/qhull/src)
 
-if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-  set(${lib_name}_libs libqhullstatic_d.a)
-else()
-  set(${lib_name}_libs libqhullstatic.a)
-endif()
+set(${lib_name}_libs libqhullstatic.a)
 
 if(${lib_name}_BUILD)
 
