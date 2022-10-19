@@ -19,35 +19,57 @@
 #
 #-----------------------------------------------------------------------------------
 
+set(Spheral_All_headers "" CACHE INTERNAL "")
+set(Spheral_All_sources "" CACHE INTERNAL "")
+
 function(spheral_add_obj_library
          package_name)
+  # list(APPEND Spheral_All_headers ${${package_name}_headers})
+  set(Spheral_All_headers "${Spheral_All_headers}" "${${package_name}_headers}" CACHE INTERNAL "")
+  set(Spheral_All_sources "${Spheral_All_sources}" "${${package_name}_sources}" CACHE INTERNAL "")
 
-  set(obj_libs_list SPHERAL_OBJ_LIBS)
+  # message(Spheral_All_headers="${Spheral_All_headers}")
+  # set(obj_libs_list SPHERAL_OBJ_LIBS)
 
-  # We can optionally specify the obj_libs_list
-  set(extra_args ${ARGN})
-  list(LENGTH extra_args extra_count)
-  if (${extra_count} GREATER 0)
-    list(GET extra_args 0 obj_libs_list)
-  endif()
+  # # We can optionally specify the obj_libs_list
+  # set(extra_args ${ARGN})
+  # list(LENGTH extra_args extra_count)
+  # if (${extra_count} GREATER 0)
+  #   list(GET extra_args 0 obj_libs_list)
+  # endif()
 
-  blt_add_library(NAME        Spheral_${package_name}
-                  HEADERS     ${${package_name}_headers}
-                  SOURCES     ${${package_name}_sources}
-                  DEPENDS_ON  ${spheral_blt_depends} ${spheral_blt_cxx_depends} ${${package_name}_ADDITIONAL_DEPENDS} ${SPHERAL_CXX_DEPENDS}
-                  OBJECT TRUE
-                  )
+  # blt_add_library(NAME        Spheral_${package_name}
+  #                 HEADERS     ${${package_name}_headers}
+  #                 SOURCES     ${${package_name}_sources}
+  #                 DEPENDS_ON  ${spheral_blt_depends} ${spheral_blt_cxx_depends} ${${package_name}_ADDITIONAL_DEPENDS} ${SPHERAL_CXX_DEPENDS}
+  #                 OBJECT TRUE
+  #                 )
 
-  if(ENABLE_CUDA)
-    set_target_properties(Spheral_${package_name} PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-  endif()
+  # if(ENABLE_CUDA)
+  #   set_target_properties(Spheral_${package_name} PROPERTIES PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
+  # endif()
 
-  # Add this to the obj_libs_list list
-  get_property(${obj_libs_list} GLOBAL PROPERTY ${obj_libs_list})
-  list(APPEND ${obj_libs_list} Spheral_${package_name})
-  set_property(GLOBAL PROPERTY ${obj_libs_list} "${${obj_libs_list}}")
+  # # Add this to the obj_libs_list list
+  # get_property(${obj_libs_list} GLOBAL PROPERTY ${obj_libs_list})
+  # list(APPEND ${obj_libs_list} Spheral_${package_name})
+  # set_property(GLOBAL PROPERTY ${obj_libs_list} "${${obj_libs_list}}")
 
 endfunction()
+
+# function(spheral_add_all_obj_libraries) # Dont need this if we are getting all of the header and source files together into one big group
+
+#   message(Printing from function to add all... Spheral_All_headers="${Spheral_All_headers}")
+#   blt_add_library(NAME        Spheral_packages
+#                   HEADERS     ${Spheral_All_headers}
+#                   SOURCES     ${Spheral_All_sources}
+#                   DEPENDS_ON  ${spheral_blt_depends} ${spheral_blt_cxx_depends} ${${package_name}_ADDITIONAL_DEPENDS} ${SPHERAL_CXX_DEPENDS}
+#                   OBJECT TRUE
+#                   )
+
+#   if(ENABLE_CUDA)
+#     set_target_properties(Spheral_packages PROPERTIES PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
+#   endif()
+# endfunction()
 
 #-----------------------------------------------------------------------------------
 # spheral_add_cxx_library
@@ -59,42 +81,45 @@ function(spheral_add_cxx_library
   set(obj_libs_list SPHERAL_OBJ_LIBS)
   set(EXTRA_CXX_DEPENDS )
 
-  # We can optionally specify the obj_libs_list and any additional dependencies
-  set(extra_args ${ARGN})
-  list(LENGTH extra_args extra_count)
-  if (${extra_count} GREATER 0)
-    list(GET extra_args 0 obj_libs_list)
-  endif()
-  if (${extra_count} GREATER 1)
-    list(GET extra_args 1 optional_arg)
-    list(APPEND EXTRA_CXX_DEPENDS ${optional_arg})
-  endif()
-  get_property(${obj_libs_list} GLOBAL PROPERTY ${obj_libs_list})
+
+  message(This_is_package_name_for_cxx="${package_name}")
+
+  # # We can optionally specify the obj_libs_list and any additional dependencies
+  # set(extra_args ${ARGN})
+  # list(LENGTH extra_args extra_count)
+  # if (${extra_count} GREATER 0)
+  #   list(GET extra_args 0 obj_libs_list)
+  # endif()
+  # if (${extra_count} GREATER 1)
+  #   list(GET extra_args 1 optional_arg)
+  #   list(APPEND EXTRA_CXX_DEPENDS ${optional_arg})
+  # endif()
+  # get_property(${obj_libs_list} GLOBAL PROPERTY ${obj_libs_list})
 
   if(NOT ENABLE_SHARED)
     # Build static spheral C++ library
     blt_add_library(NAME        Spheral_${package_name}
-                    HEADERS     ${${package_name}_headers}
-                    SOURCES     ${${package_name}_sources}
-                    DEPENDS_ON  ${${obj_libs_list}} ${SPHERAL_CXX_DEPENDS} ${EXTRA_CXX_DEPENDS}
-                    SHARED      FALSE
+                    HEADERS     ${Spheral_All_headers}
+                    SOURCES     ${Spheral_All_sources}
+                    DEPENDS_ON  ${SPHERAL_CXX_DEPENDS} ${EXTRA_CXX_DEPENDS} # ${${obj_libs_list}} #removing obj_libs_list
+                    SHARED      TRUE
                     )
   else()
     # Build shared spheral C++ library
     blt_add_library(NAME        Spheral_${package_name}
-                    HEADERS     ${${package_name}_headers}
-                    SOURCES     ${${package_name}_sources}
-                    DEPENDS_ON  ${${obj_libs_list}} ${SPHERAL_CXX_DEPENDS} ${EXTRA_CXX_DEPENDS}
-                    SHARED      TRUE
+                    HEADERS     ${Spheral_All_headers}
+                    SOURCES     ${Spheral_All_sources}
+                    DEPENDS_ON  ${SPHERAL_CXX_DEPENDS} ${EXTRA_CXX_DEPENDS} # ${${obj_libs_list}}
+                    SHARED      FALSE
                     )
   endif()
 
-  get_target_property(_LINK_LIBRARIES Spheral_${package_name} LINK_LIBRARIES)
-  LIST(REMOVE_DUPLICATES _LINK_LIBRARIES)
-  set_target_properties(Spheral_${package_name} PROPERTIES LINK_LIBRARIES "${_LINK_LIBRARIES}") 
+  # get_target_property(_LINK_LIBRARIES Spheral_${package_name} LINK_LIBRARIES) #removing this might help when making mega lists
+  # LIST(REMOVE_DUPLICATES _LINK_LIBRARIES)
+  # set_target_properties(Spheral_${package_name} PROPERTIES LINK_LIBRARIES "${_LINK_LIBRARIES}") 
 
   if(ENABLE_CUDA)
-    set_target_properties(Spheral_${package_name} PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+    set_target_properties(Spheral_${package_name} PROPERTIES PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
   endif()
 
   # Install Spheral C++ target and set it as an exportable CMake target
@@ -104,7 +129,7 @@ function(spheral_add_cxx_library
           )
 
   # Set the r-path of the C++ lib such that it is independent of the build dir when installed
-  set_target_properties(Spheral_${package_name} PROPERTIES
+  set_target_properties(Spheral_packages PROPERTIES
                         INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib;${conduit_DIR}/lib;${axom_DIR}/lib;${boost_DIR}/lib"
                         )
 endfunction()

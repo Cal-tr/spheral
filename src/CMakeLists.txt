@@ -10,6 +10,8 @@ include_directories(${PROJECT_BINARY_DIR}/src)
 
 set(SPHERAL_PYTHON_INSTALL ${PROJECT_BINARY_DIR}/lib)
 
+
+
 list(APPEND _packages 
   ArtificialViscosity
   ArtificialConduction
@@ -65,8 +67,12 @@ foreach(e_package ${extra_packages})
   add_subdirectory(${extra_packages_DIR}/${e_package} ${CMAKE_CURRENT_BINARY_DIR}/${e_package})
 endforeach()
 
+spheral_add_all_obj_libraries()
+
 set(CXX_sources spheralCXX.cc)
 
 spheral_add_cxx_library(CXX)
+
+
 
 install(EXPORT ${PROJECT_NAME}-targets DESTINATION Spheral/lib/cmake)
